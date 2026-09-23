@@ -1,28 +1,31 @@
 // ======================================================
-// SST 行为实验 - 正式版
+// SST 行为实验 - 前后测正式版
+//
+// 网址：
+// 前测：?pid=S001&phase=pre
+// 后测：?pid=S001&phase=post
 //
 // 实验流程：
-//
-// 1. 输入被试编号
-// 2. 练习
-//      随机10个SST
-//      5张练习图片
-// 3. 正式实验
-//      3个Block（拉丁方平衡顺序）
+// 1. 从网址自动读取被试编号和前/后测
+// 2. 指导语
+// 3. 练习：10道SST + 5张图片
+// 4. 正式实验：
+//      3个Block（拉丁方平衡）
 //      每Block 6个Session
-//      每Session：10个SST + 5张图片
+//      每Session：10道SST + 5张图片
 //
 // SST：
-//      鼠标点击 / 数字键1-5选择
-//      Backspace 删除最后一个
-//      Enter 确认
+//      鼠标/触摸点击
+//      数字键1-5选择
+//      Backspace删除上一个
+//      Enter确认
 //      不反馈正确/错误
 //
 // 图片：
-//      图片真正加载完成后开始计时
+//      真实加载完成后开始计时
 //      呈现6000 ms
-//      自动进入效价评分
-//      再进入唤醒度评分
+//      自动进入效价
+//      自动进入唤醒度
 //
 // 评分：
 //      鼠标点击1-9
@@ -34,16 +37,29 @@
 // ======================================================
 
 
+// ======================================================
+// 一、URL：被试编号 + 前后测
+// ======================================================
+
+var urlParams =
+    new URLSearchParams(
+        window.location.search
+    );
+
+var participantId =
+    urlParams.get("pid") || "";
+
+var phase =
+    urlParams.get("phase") || "";
+
 
 // ======================================================
-// 一、全局变量
+// 二、全局变量
 // ======================================================
 
 var experimentData = [];
 
-var participantId = "";
-
-var currentScreen = "participant";
+var currentScreen = "guidance";
 
 
 // ------------------------------------------------------
@@ -56,7 +72,7 @@ var trialStartTime = null;
 
 
 // ------------------------------------------------------
-// 正式实验位置
+// 正式实验
 // ------------------------------------------------------
 
 var currentBlockIndex = 0;
@@ -109,11 +125,9 @@ var valenceStartTime = null;
 var arousalStartTime = null;
 
 
-
-// ======================================================
-// 二、Block顺序
-// 三种拉丁方顺序
-// ======================================================
+// ------------------------------------------------------
+// Block顺序
+// ------------------------------------------------------
 
 var blockOrders = [
 
@@ -140,19 +154,15 @@ var blockOrders = [
 var currentBlockOrder = [];
 
 
-
 // ======================================================
 // 三、图片材料
-// 所有图片均位于 negative 文件夹
-// jpg格式
 // ======================================================
 
 var pictureSets = {
 
-
-    // ==================================================
-    // 练习图片 5张
-    // ==================================================
+    // --------------------------------------------------
+    // 练习5张
+    // --------------------------------------------------
 
     practice: [
 
@@ -165,9 +175,9 @@ var pictureSets = {
     ],
 
 
-    // ==================================================
-    // 分心 30张
-    // ==================================================
+    // --------------------------------------------------
+    // 分心30张
+    // --------------------------------------------------
 
     distract: [
 
@@ -210,9 +220,9 @@ var pictureSets = {
     ],
 
 
-    // ==================================================
-    // 重评 30张
-    // ==================================================
+    // --------------------------------------------------
+    // 重评30张
+    // --------------------------------------------------
 
     reappraisal: [
 
@@ -255,9 +265,9 @@ var pictureSets = {
     ],
 
 
-    // ==================================================
-    // 混合 30张
-    // ==================================================
+    // --------------------------------------------------
+    // 混合30张
+    // --------------------------------------------------
 
     mixed: [
 
@@ -302,19 +312,14 @@ var pictureSets = {
 };
 
 
-
 // ======================================================
 // 四、工具函数
 // ======================================================
 
-
-// ------------------------------------------------------
-// 随机打乱数组
-// ------------------------------------------------------
-
 function shuffleArray(array) {
 
-    var copy = array.slice();
+    var copy =
+        array.slice();
 
     for (
         var i = copy.length - 1;
@@ -324,8 +329,7 @@ function shuffleArray(array) {
 
         var j =
             Math.floor(
-                Math.random() *
-                (i + 1)
+                Math.random() * (i + 1)
             );
 
         var temp =
@@ -342,20 +346,14 @@ function shuffleArray(array) {
 }
 
 
-// ------------------------------------------------------
-// 比较两个数组是否完全一致
-// ------------------------------------------------------
-
 function arraysEqual(a, b) {
 
     if (
-        a.length !==
-        b.length
+        a.length !== b.length
     ) {
 
         return false;
     }
-
 
     for (
         var i = 0;
@@ -371,14 +369,9 @@ function arraysEqual(a, b) {
         }
     }
 
-
     return true;
 }
 
-
-// ------------------------------------------------------
-// 白色页面
-// ------------------------------------------------------
 
 function resetBodyWhite() {
 
@@ -390,10 +383,6 @@ function resetBodyWhite() {
 }
 
 
-// ------------------------------------------------------
-// 黑色页面
-// ------------------------------------------------------
-
 function resetBodyBlack() {
 
     document.body.style.background =
@@ -403,10 +392,6 @@ function resetBodyBlack() {
         "#ffffff";
 }
 
-
-// ------------------------------------------------------
-// 清理图片计时器
-// ------------------------------------------------------
 
 function clearPictureTimer() {
 
@@ -421,16 +406,6 @@ function clearPictureTimer() {
 }
 
 
-// ------------------------------------------------------
-// 从图片路径提取图片编号
-//
-// negative/1321.jpg
-// → 1321
-//
-// negative/2375.1.jpg
-// → 2375.1
-// ------------------------------------------------------
-
 function getPictureId(path) {
 
     var fileName =
@@ -443,9 +418,8 @@ function getPictureId(path) {
 }
 
 
-
 // ======================================================
-// 五、被试编号与Block顺序
+// 五、根据被试编号决定Block顺序
 // ======================================================
 
 function getBlockOrderFromParticipantId(pid) {
@@ -455,9 +429,7 @@ function getBlockOrderFromParticipantId(pid) {
             /\d+/
         );
 
-
     var participantNumber = 1;
-
 
     if (match) {
 
@@ -468,10 +440,8 @@ function getBlockOrderFromParticipantId(pid) {
             );
     }
 
-
     var index =
         (participantNumber - 1) % 3;
-
 
     return blockOrders[
         index
@@ -479,130 +449,34 @@ function getBlockOrderFromParticipantId(pid) {
 }
 
 
-
 // ======================================================
-// 六、被试编号首页
-// ======================================================
-
-function showParticipantPage() {
-
-    currentScreen =
-        "participant";
-
-
-    resetBodyWhite();
-
-
-    var app =
-        document.getElementById(
-            "app"
-        );
-
-
-    app.innerHTML = `
-
-        <div class="experiment-container">
-
-            <div class="title">
-
-                实验
-
-            </div>
-
-
-            <div class="instruction">
-
-                请输入被试编号
-
-            </div>
-
-
-            <input
-
-                id="participantInput"
-
-                type="text"
-
-                placeholder="例如：S001"
-
-                autocomplete="off"
-
-                style="
-                    width:220px;
-                    padding:14px;
-                    font-size:22px;
-                    text-align:center;
-                    margin-top:25px;
-                    margin-bottom:25px;
-                "
-
-            >
-
-
-            <br>
-
-
-            <button
-
-                class="control-button"
-
-                onclick="saveParticipantId()"
-
-            >
-
-                继续
-
-            </button>
-
-        </div>
-
-    `;
-
-
-    setTimeout(
-        function() {
-
-            var input =
-                document.getElementById(
-                    "participantInput"
-                );
-
-
-            if (input) {
-
-                input.focus();
-            }
-
-        },
-        100
-    );
-}
-
-
-
-// ======================================================
-// 七、保存被试编号
+// 六、检查URL
 // ======================================================
 
-function saveParticipantId() {
-
-    var input =
-        document.getElementById(
-            "participantInput"
-        );
-
-
-    participantId =
-        input.value.trim();
-
+function checkURL() {
 
     if (!participantId) {
 
-        alert(
-            "请输入被试编号"
+        showURLProblem(
+            "没有检测到被试编号。",
+            "请使用类似：?pid=S001&phase=pre"
         );
 
-        return;
+        return false;
+    }
+
+
+    if (
+        phase !== "pre" &&
+        phase !== "post"
+    ) {
+
+        showURLProblem(
+            "没有正确检测到前测/后测。",
+            "请使用 phase=pre 或 phase=post"
+        );
+
+        return false;
     }
 
 
@@ -617,6 +491,10 @@ function saveParticipantId() {
         participantId
     );
 
+    console.log(
+        "测量阶段：",
+        phase
+    );
 
     console.log(
         "Block顺序：",
@@ -624,83 +502,148 @@ function saveParticipantId() {
     );
 
 
-    showPracticeInstruction();
+    return true;
 }
 
 
-
 // ======================================================
-// 八、练习指导语
+// 七、URL错误页面
 // ======================================================
 
-function showPracticeInstruction() {
+function showURLProblem(title, message) {
 
     currentScreen =
-        "practice_instruction";
-
+        "url_error";
 
     resetBodyWhite();
-
 
     var app =
         document.getElementById(
             "app"
         );
 
+    app.innerHTML = `
+
+        <div class="experiment-container">
+
+            <div class="title">
+                实验链接错误
+            </div>
+
+            <div class="instruction">
+
+                ${title}
+
+                <br><br>
+
+                ${message}
+
+                <br><br>
+
+                正确示例：
+
+                <br><br>
+
+                https://13891791-cloud.github.io/behavior-sst-mobile/?pid=S001&phase=pre
+
+            </div>
+
+        </div>
+
+    `;
+}
+
+
+// ======================================================
+// 八、正式指导语
+// ======================================================
+
+function showGuidance() {
+
+    currentScreen =
+        "guidance";
+
+    resetBodyWhite();
+
+    var app =
+        document.getElementById(
+            "app"
+        );
 
     app.innerHTML = `
 
         <div class="experiment-container">
 
             <div class="title">
-
-                练习
-
+                实验指导语
             </div>
-
 
             <div class="instruction">
 
-                接下来首先进行练习。
+                接下来将进行一项句子组成和图片评价任务。
+
+                <br><br>
+
+                首先会进行一小段练习，
+                帮助你熟悉任务操作。
 
                 <br><br>
 
                 在句子组成任务中，
-                请从5个词中选择4个词，
-                按照你认为正确的顺序
-                组成一个通顺的句子。
+                你会看到5个词语，
+                请从中选择4个词，
+                并按照你认为正确的顺序组成一个通顺的句子。
 
                 <br><br>
 
-                鼠标点击词语，
-                或按数字键1–5选择。
+                你可以直接点击词语，
+                也可以使用数字键
+                1、2、3、4、5
+                进行选择。
 
                 <br><br>
 
-                Backspace：删除上一个
-
-                <br>
-
-                Enter：确认
+                Backspace：
+                删除上一个选择。
 
                 <br><br>
 
-                之后将观看图片，
-                并分别进行效价和唤醒度评分。
+                Enter：
+                确认当前答案。
+
+                <br><br>
+
+                接下来会呈现图片。
+                每张图片会呈现6秒。
+
+                <br><br>
+
+                图片消失后，
+                请分别对图片的效价和唤醒度进行1—9点评分。
+
+                <br><br>
+
+                效价：
+                1表示非常不愉快，
+                9表示非常愉快。
+
+                <br><br>
+
+                唤醒度：
+                1表示非常低，
+                9表示非常高。
+
+                <br><br>
+
+                请按照自己的第一反应作答。
 
             </div>
 
-
             <button
-
                 class="control-button"
-
-                onclick="startPractice()"
-
+                onclick="startPracticeInstruction()"
             >
-
-                开始练习
-
+                开始
             </button>
 
         </div>
@@ -709,10 +652,59 @@ function showPracticeInstruction() {
 }
 
 
+// ======================================================
+// 九、练习指导语
+// ======================================================
+
+function startPracticeInstruction() {
+
+    currentScreen =
+        "practice_instruction";
+
+    resetBodyWhite();
+
+    var app =
+        document.getElementById(
+            "app"
+        );
+
+    app.innerHTML = `
+
+        <div class="experiment-container">
+
+            <div class="title">
+                练习
+            </div>
+
+            <div class="instruction">
+
+                接下来进行练习。
+
+                <br><br>
+
+                练习包括句子组成任务和图片评价任务。
+
+                <br><br>
+
+                请按照刚才的说明完成练习。
+
+            </div>
+
+            <button
+                class="control-button"
+                onclick="startPractice()"
+            >
+                开始练习
+            </button>
+
+        </div>
+
+    `;
+}
+
 
 // ======================================================
-// 九、建立练习材料
-// 随机抽10个正式句子
+// 十、开始练习
 // ======================================================
 
 function startPractice() {
@@ -740,21 +732,18 @@ function startPractice() {
 
     practicePictureIndex = 0;
 
-
     startPracticeSST();
 }
 
 
-
 // ======================================================
-// 十、练习SST
+// 十一、练习SST
 // ======================================================
 
 function startPracticeSST() {
 
     currentScreen =
         "practice_sst";
-
 
     resetBodyWhite();
 
@@ -774,19 +763,12 @@ function startPracticeSST() {
 
     selectedWords = [];
 
-
     trialStartTime =
         performance.now();
-
 
     renderPracticeSST();
 }
 
-
-
-// ======================================================
-// 十一、显示练习SST
-// ======================================================
 
 function renderPracticeSST() {
 
@@ -795,24 +777,18 @@ function renderPracticeSST() {
             "app"
         );
 
-
     var trial =
         practiceTrials[
             practiceTrialIndex
         ];
 
-
     var html = `
 
         <div class="experiment-container">
 
-
             <div class="title">
-
                 句子组成任务
-
             </div>
-
 
             <div class="instruction">
 
@@ -820,7 +796,6 @@ function renderPracticeSST() {
                 按照正确顺序组成一个通顺的句子。
 
             </div>
-
 
             <div class="word-area">
 
@@ -839,20 +814,15 @@ function renderPracticeSST() {
             html += `
 
                 <button
-
                     class="
                         word-button
                         ${selected ? "selected" : ""}
                     "
-
                     onclick="
                         selectPracticeWord(${index})
                     "
-
                 >
-
                     ${word}
-
                 </button>
 
             `;
@@ -864,72 +834,42 @@ function renderPracticeSST() {
 
             </div>
 
-
             <div class="selected-box">
 
                 ${
                     selectedWords.length === 0
-
                     ? "已选词语会显示在这里"
-
-                    : selectedWords.join(
-                        " → "
-                    )
+                    : selectedWords.join(" → ")
                 }
 
             </div>
 
-
             <div class="control-area">
 
-
                 <button
-
                     class="control-button"
-
-                    onclick="
-                        deletePracticeWord()
-                    "
-
+                    onclick="deletePracticeWord()"
                 >
-
                     删除上一个
-
                 </button>
-
 
                 <button
-
                     class="control-button"
-
-                    onclick="
-                        confirmPracticeSST()
-                    "
-
+                    onclick="confirmPracticeSST()"
                 >
-
                     确认
-
                 </button>
-
 
             </div>
-
 
         </div>
 
     `;
 
-
     app.innerHTML =
         html;
 }
 
-
-
-// ======================================================
-// 十二、练习选词
-// ======================================================
 
 function selectPracticeWord(index) {
 
@@ -938,6 +878,9 @@ function selectPracticeWord(index) {
             practiceTrialIndex
         ];
 
+    if (!trial) {
+        return;
+    }
 
     var word =
         trial.words[index];
@@ -965,15 +908,9 @@ function selectPracticeWord(index) {
         word
     );
 
-
     renderPracticeSST();
 }
 
-
-
-// ======================================================
-// 十三、练习删除
-// ======================================================
 
 function deletePracticeWord() {
 
@@ -987,11 +924,6 @@ function deletePracticeWord() {
     }
 }
 
-
-
-// ======================================================
-// 十四、确认练习SST
-// ======================================================
 
 function confirmPracticeSST() {
 
@@ -1033,6 +965,9 @@ function confirmPracticeSST() {
             participantId,
 
         phase:
+            phase,
+
+        stage:
             "practice",
 
         trial_type:
@@ -1085,15 +1020,12 @@ function confirmPracticeSST() {
 
     practiceTrialIndex += 1;
 
-
     startPracticeSST();
 }
 
 
-
 // ======================================================
-// 十五、练习图片
-// 图片实际加载成功后才开始6秒计时
+// 十二、练习图片
 // ======================================================
 
 function showPracticePicture() {
@@ -1115,7 +1047,6 @@ function showPracticePicture() {
     currentScreen =
         "practice_picture";
 
-
     resetBodyBlack();
 
 
@@ -1134,7 +1065,6 @@ function showPracticePicture() {
     app.innerHTML = `
 
         <div
-
             style="
                 width:100%;
                 min-height:100vh;
@@ -1142,23 +1072,17 @@ function showPracticePicture() {
                 display:flex;
                 justify-content:center;
                 align-items:center;
-                box-sizing:border-box;
             "
-
         >
 
             <img
-
                 id="practiceStimulusImage"
-
                 src="${pictureFile}"
-
                 style="
                     max-width:100%;
                     max-height:100vh;
                     object-fit:contain;
                 "
-
             >
 
         </div>
@@ -1172,30 +1096,42 @@ function showPracticePicture() {
         );
 
 
+    var started =
+        false;
+
+
+    function startPictureTimer() {
+
+        if (started) {
+            return;
+        }
+
+        started = true;
+
+        pictureOnsetTime =
+            performance.now();
+
+
+        pictureTimer =
+            setTimeout(
+                function() {
+
+                    pictureActualDuration =
+                        Math.round(
+                            performance.now() -
+                            pictureOnsetTime
+                        );
+
+                    showPracticeValence();
+
+                },
+                6000
+            );
+    }
+
+
     img.onload =
-        function() {
-
-            pictureOnsetTime =
-                performance.now();
-
-
-            pictureTimer =
-                setTimeout(
-                    function() {
-
-                        pictureActualDuration =
-                            Math.round(
-                                performance.now() -
-                                pictureOnsetTime
-                            );
-
-
-                        showPracticeValence();
-
-                    },
-                    6000
-                );
-        };
+        startPictureTimer;
 
 
     img.onerror =
@@ -1206,7 +1142,6 @@ function showPracticePicture() {
                 pictureFile
             );
 
-
             alert(
                 "图片加载失败：" +
                 pictureFile
@@ -1214,27 +1149,22 @@ function showPracticePicture() {
         };
 
 
-    // 对已经被浏览器缓存的图片进行兼容
     if (img.complete) {
-
-        img.onload();
+        startPictureTimer();
     }
 }
 
 
-
 // ======================================================
-// 十六、练习效价
+// 十三、练习效价
 // ======================================================
 
 function showPracticeValence() {
 
     clearPictureTimer();
 
-
     currentScreen =
         "practice_valence";
-
 
     valenceStartTime =
         performance.now();
@@ -1250,12 +1180,9 @@ function showPracticeValence() {
 }
 
 
-
-// ======================================================
-// 十七、提交练习效价
-// ======================================================
-
-function submitPracticeValence(rating) {
+function submitPracticeValence(
+    rating
+) {
 
     if (
         currentScreen !==
@@ -1281,16 +1208,14 @@ function submitPracticeValence(rating) {
 }
 
 
-
 // ======================================================
-// 十八、练习唤醒度
+// 十四、练习唤醒度
 // ======================================================
 
 function showPracticeArousal() {
 
     currentScreen =
         "practice_arousal";
-
 
     arousalStartTime =
         performance.now();
@@ -1306,12 +1231,9 @@ function showPracticeArousal() {
 }
 
 
-
-// ======================================================
-// 十九、提交练习唤醒度
-// ======================================================
-
-function submitPracticeArousal(rating) {
+function submitPracticeArousal(
+    rating
+) {
 
     if (
         currentScreen !==
@@ -1341,6 +1263,9 @@ function submitPracticeArousal(rating) {
             participantId,
 
         phase:
+            phase,
+
+        stage:
             "practice",
 
         trial_type:
@@ -1381,10 +1306,8 @@ function submitPracticeArousal(rating) {
     currentValence =
         null;
 
-
     currentValenceRT =
         null;
-
 
     pictureActualDuration =
         null;
@@ -1392,21 +1315,18 @@ function submitPracticeArousal(rating) {
 
     practicePictureIndex += 1;
 
-
     showPracticePicture();
 }
 
 
-
 // ======================================================
-// 二十、练习结束
+// 十五、练习结束
 // ======================================================
 
 function showPracticeEnd() {
 
     currentScreen =
         "practice_end";
-
 
     resetBodyWhite();
 
@@ -1421,13 +1341,9 @@ function showPracticeEnd() {
 
         <div class="experiment-container">
 
-
             <div class="title">
-
-                练习结束
-
+                练习完成
             </div>
-
 
             <div class="instruction">
 
@@ -1439,25 +1355,17 @@ function showPracticeEnd() {
 
                 <br><br>
 
-                请准备好后开始。
+                正式实验过程中，
+                请按照指导语完成任务。
 
             </div>
 
-
             <button
-
                 class="control-button"
-
-                onclick="
-                    startFormalExperiment()
-                "
-
+                onclick="startFormalExperiment()"
             >
-
                 开始正式实验
-
             </button>
-
 
         </div>
 
@@ -1465,23 +1373,26 @@ function showPracticeEnd() {
 }
 
 
-
 // ======================================================
-// 二十一、开始正式实验
+// 十六、开始正式实验
 // ======================================================
 
 function startFormalExperiment() {
 
     currentBlockIndex = 0;
 
+    currentSessionIndex = 0;
+
+    currentSSTIndex = 0;
+
+    currentPictureIndex = 0;
 
     startBlock();
 }
 
 
-
 // ======================================================
-// 二十二、开始Block
+// 十七、开始Block
 // ======================================================
 
 function startBlock() {
@@ -1502,6 +1413,7 @@ function startBlock() {
 
         currentBlockTrials =
             materials.distract.slice();
+
     }
 
     else if (
@@ -1511,6 +1423,7 @@ function startBlock() {
 
         currentBlockTrials =
             materials.reappraisal.slice();
+
     }
 
     else {
@@ -1521,7 +1434,7 @@ function startBlock() {
 
 
     console.log(
-        "开始 Block：",
+        "开始Block：",
         currentBlockIndex + 1,
         condition
     );
@@ -1531,9 +1444,8 @@ function startBlock() {
 }
 
 
-
 // ======================================================
-// 二十三、开始Session
+// 十八、开始Session
 // 不显示Session页面
 // ======================================================
 
@@ -1545,10 +1457,6 @@ function startSession() {
         ];
 
 
-    // --------------------------------------------------
-    // 10道SST
-    // --------------------------------------------------
-
     var sentenceStart =
         currentSessionIndex * 10;
 
@@ -1559,10 +1467,6 @@ function startSession() {
             sentenceStart + 10
         );
 
-
-    // --------------------------------------------------
-    // 5张图片
-    // --------------------------------------------------
 
     var pictureStart =
         currentSessionIndex * 5;
@@ -1586,9 +1490,8 @@ function startSession() {
 }
 
 
-
 // ======================================================
-// 二十四、开始正式SST
+// 十九、正式SST
 // ======================================================
 
 function startSSTTrial() {
@@ -1596,11 +1499,9 @@ function startSSTTrial() {
     currentScreen =
         "sst";
 
-
     resetBodyWhite();
 
 
-    // 本Session 10题已经完成
     if (
         currentSSTIndex >=
         currentSessionSST.length
@@ -1608,9 +1509,7 @@ function startSSTTrial() {
 
         currentPictureIndex = 0;
 
-
         showPicture();
-
 
         return;
     }
@@ -1618,20 +1517,12 @@ function startSSTTrial() {
 
     selectedWords = [];
 
-
     trialStartTime =
         performance.now();
-
 
     renderSST();
 }
 
-
-
-// ======================================================
-// 二十五、显示正式SST
-// 不显示Block、Session、题号
-// ======================================================
 
 function renderSST() {
 
@@ -1651,13 +1542,9 @@ function renderSST() {
 
         <div class="experiment-container">
 
-
             <div class="title">
-
                 句子组成任务
-
             </div>
-
 
             <div class="instruction">
 
@@ -1665,7 +1552,6 @@ function renderSST() {
                 按照正确顺序组成一个通顺的句子。
 
             </div>
-
 
             <div class="word-area">
 
@@ -1684,20 +1570,15 @@ function renderSST() {
             html += `
 
                 <button
-
                     class="
                         word-button
                         ${selected ? "selected" : ""}
                     "
-
                     onclick="
                         selectWord(${index})
                     "
-
                 >
-
                     ${word}
-
                 </button>
 
             `;
@@ -1709,57 +1590,33 @@ function renderSST() {
 
             </div>
 
-
             <div class="selected-box">
 
                 ${
                     selectedWords.length === 0
-
                     ? "已选词语会显示在这里"
-
-                    : selectedWords.join(
-                        " → "
-                    )
+                    : selectedWords.join(" → ")
                 }
 
             </div>
 
-
             <div class="control-area">
 
-
                 <button
-
                     class="control-button"
-
-                    onclick="
-                        deleteLastWord()
-                    "
-
+                    onclick="deleteLastWord()"
                 >
-
                     删除上一个
-
                 </button>
-
 
                 <button
-
                     class="control-button"
-
-                    onclick="
-                        confirmSST()
-                    "
-
+                    onclick="confirmSST()"
                 >
-
                     确认
-
                 </button>
-
 
             </div>
-
 
         </div>
 
@@ -1771,9 +1628,8 @@ function renderSST() {
 }
 
 
-
 // ======================================================
-// 二十六、正式SST选词
+// 二十、正式SST选词
 // ======================================================
 
 function selectWord(index) {
@@ -1785,7 +1641,6 @@ function selectWord(index) {
 
 
     if (!trial) {
-
         return;
     }
 
@@ -1816,15 +1671,9 @@ function selectWord(index) {
         word
     );
 
-
     renderSST();
 }
 
-
-
-// ======================================================
-// 二十七、正式SST删除
-// ======================================================
 
 function deleteLastWord() {
 
@@ -1834,15 +1683,13 @@ function deleteLastWord() {
 
         selectedWords.pop();
 
-
         renderSST();
     }
 }
 
 
-
 // ======================================================
-// 二十八、正式SST确认
+// 二十一、正式SST确认
 // ======================================================
 
 function confirmSST() {
@@ -1854,7 +1701,6 @@ function confirmSST() {
         alert(
             "请先选择4个词"
         );
-
 
         return;
     }
@@ -1899,6 +1745,9 @@ function confirmSST() {
             participantId,
 
         phase:
+            phase,
+
+        stage:
             "formal",
 
         trial_type:
@@ -1911,9 +1760,7 @@ function confirmSST() {
             condition,
 
         block_order:
-            currentBlockOrder.join(
-                "-"
-            ),
+            currentBlockOrder.join("-"),
 
         session_num:
             currentSessionIndex + 1,
@@ -1969,15 +1816,12 @@ function confirmSST() {
     // 不显示正确/错误
     currentSSTIndex += 1;
 
-
     startSSTTrial();
 }
 
 
-
 // ======================================================
-// 二十九、正式图片
-// 图片加载完成后正式计时6000ms
+// 二十二、正式图片
 // ======================================================
 
 function showPicture() {
@@ -1985,7 +1829,6 @@ function showPicture() {
     clearPictureTimer();
 
 
-    // 本Session 5张图片完成
     if (
         currentPictureIndex >=
         currentSessionPictures.length
@@ -1993,14 +1836,12 @@ function showPicture() {
 
         finishSession();
 
-
         return;
     }
 
 
     currentScreen =
         "picture";
-
 
     resetBodyBlack();
 
@@ -2020,7 +1861,6 @@ function showPicture() {
     app.innerHTML = `
 
         <div
-
             style="
                 width:100%;
                 min-height:100vh;
@@ -2028,23 +1868,17 @@ function showPicture() {
                 display:flex;
                 justify-content:center;
                 align-items:center;
-                box-sizing:border-box;
             "
-
         >
 
             <img
-
                 id="formalStimulusImage"
-
                 src="${pictureFile}"
-
                 style="
                     max-width:100%;
                     max-height:100vh;
                     object-fit:contain;
                 "
-
             >
 
         </div>
@@ -2058,30 +1892,42 @@ function showPicture() {
         );
 
 
+    var started =
+        false;
+
+
+    function startPictureTimer() {
+
+        if (started) {
+            return;
+        }
+
+        started = true;
+
+        pictureOnsetTime =
+            performance.now();
+
+
+        pictureTimer =
+            setTimeout(
+                function() {
+
+                    pictureActualDuration =
+                        Math.round(
+                            performance.now() -
+                            pictureOnsetTime
+                        );
+
+                    showValenceRating();
+
+                },
+                6000
+            );
+    }
+
+
     img.onload =
-        function() {
-
-            pictureOnsetTime =
-                performance.now();
-
-
-            pictureTimer =
-                setTimeout(
-                    function() {
-
-                        pictureActualDuration =
-                            Math.round(
-                                performance.now() -
-                                pictureOnsetTime
-                            );
-
-
-                        showValenceRating();
-
-                    },
-                    6000
-                );
-        };
+        startPictureTimer;
 
 
     img.onerror =
@@ -2092,7 +1938,6 @@ function showPicture() {
                 pictureFile
             );
 
-
             alert(
                 "图片加载失败：" +
                 pictureFile
@@ -2101,25 +1946,21 @@ function showPicture() {
 
 
     if (img.complete) {
-
-        img.onload();
+        startPictureTimer();
     }
 }
 
 
-
 // ======================================================
-// 三十、正式效价
+// 二十三、正式效价
 // ======================================================
 
 function showValenceRating() {
 
     clearPictureTimer();
 
-
     currentScreen =
         "valence";
-
 
     valenceStartTime =
         performance.now();
@@ -2135,12 +1976,9 @@ function showValenceRating() {
 }
 
 
-
-// ======================================================
-// 三十一、提交正式效价
-// ======================================================
-
-function submitValence(rating) {
+function submitValence(
+    rating
+) {
 
     if (
         currentScreen !==
@@ -2166,16 +2004,14 @@ function submitValence(rating) {
 }
 
 
-
 // ======================================================
-// 三十二、正式唤醒度
+// 二十四、正式唤醒度
 // ======================================================
 
 function showArousalRating() {
 
     currentScreen =
         "arousal";
-
 
     arousalStartTime =
         performance.now();
@@ -2191,12 +2027,9 @@ function showArousalRating() {
 }
 
 
-
-// ======================================================
-// 三十三、提交正式唤醒度
-// ======================================================
-
-function submitArousal(rating) {
+function submitArousal(
+    rating
+) {
 
     if (
         currentScreen !==
@@ -2239,6 +2072,9 @@ function submitArousal(rating) {
             participantId,
 
         phase:
+            phase,
+
+        stage:
             "formal",
 
         trial_type:
@@ -2251,9 +2087,7 @@ function submitArousal(rating) {
             condition,
 
         block_order:
-            currentBlockOrder.join(
-                "-"
-            ),
+            currentBlockOrder.join("-"),
 
         session_num:
             currentSessionIndex + 1,
@@ -2296,10 +2130,8 @@ function submitArousal(rating) {
     currentValence =
         null;
 
-
     currentValenceRT =
         null;
-
 
     pictureActualDuration =
         null;
@@ -2307,14 +2139,12 @@ function submitArousal(rating) {
 
     currentPictureIndex += 1;
 
-
     showPicture();
 }
 
 
-
 // ======================================================
-// 三十四、通用9点评分页面
+// 二十五、9点评分页面
 // ======================================================
 
 function renderScale(
@@ -2334,7 +2164,8 @@ function renderScale(
         );
 
 
-    var functionName = "";
+    var functionName =
+        "";
 
 
     if (
@@ -2344,6 +2175,7 @@ function renderScale(
 
         functionName =
             "submitValence";
+
     }
 
     else if (
@@ -2353,6 +2185,7 @@ function renderScale(
 
         functionName =
             "submitArousal";
+
     }
 
     else if (
@@ -2362,6 +2195,7 @@ function renderScale(
 
         functionName =
             "submitPracticeValence";
+
     }
 
     else if (
@@ -2386,11 +2220,9 @@ function renderScale(
         buttons += `
 
             <button
-
                 onclick="
                     ${functionName}(${i})
                 "
-
                 style="
                     background:transparent;
                     border:none;
@@ -2400,12 +2232,10 @@ function renderScale(
                     cursor:pointer;
                     width:55px;
                     height:55px;
+                    touch-action:manipulation;
                 "
-
             >
-
                 ${i}
-
             </button>
 
         `;
@@ -2415,7 +2245,6 @@ function renderScale(
     app.innerHTML = `
 
         <div
-
             style="
                 width:100%;
                 min-height:100vh;
@@ -2426,39 +2255,30 @@ function renderScale(
                 justify-content:center;
                 padding:20px;
                 box-sizing:border-box;
-                font-family:Arial, 'Microsoft YaHei', sans-serif;
+                font-family:Arial,'Microsoft YaHei',sans-serif;
             "
-
         >
 
             <div
-
                 style="
                     width:90%;
                     max-width:900px;
                     text-align:center;
                 "
-
             >
 
-
                 <div
-
                     style="
                         font-size:52px;
                         font-weight:bold;
                         margin-bottom:90px;
                     "
-
                 >
-
                     ${title}
-
                 </div>
 
 
                 <div
-
                     style="
                         display:flex;
                         justify-content:space-between;
@@ -2467,7 +2287,6 @@ function renderScale(
                         font-weight:bold;
                         margin-bottom:20px;
                     "
-
                 >
 
                     <span>
@@ -2486,18 +2305,15 @@ function renderScale(
 
 
                 <div
-
                     style="
                         position:relative;
                         width:100%;
                         height:24px;
                         margin-bottom:10px;
                     "
-
                 >
 
                     <div
-
                         style="
                             position:absolute;
                             left:0;
@@ -2507,12 +2323,10 @@ function renderScale(
                             background:white;
                             transform:translateY(-50%);
                         "
-
                     ></div>
 
 
                     <div
-
                         style="
                             position:absolute;
                             left:-1px;
@@ -2522,57 +2336,43 @@ function renderScale(
                                 rotate(180deg);
                             width:0;
                             height:0;
-                            border-top:
-                                8px solid transparent;
-                            border-bottom:
-                                8px solid transparent;
-                            border-left:
-                                14px solid white;
+                            border-top:8px solid transparent;
+                            border-bottom:8px solid transparent;
+                            border-left:14px solid white;
                         "
-
                     ></div>
 
 
                     <div
-
                         style="
                             position:absolute;
                             right:-1px;
                             top:50%;
-                            transform:
-                                translateY(-50%);
+                            transform:translateY(-50%);
                             width:0;
                             height:0;
-                            border-top:
-                                8px solid transparent;
-                            border-bottom:
-                                8px solid transparent;
-                            border-left:
-                                14px solid white;
+                            border-top:8px solid transparent;
+                            border-bottom:8px solid transparent;
+                            border-left:14px solid white;
                         "
-
                     ></div>
 
                 </div>
 
 
                 <div
-
                     style="
                         display:flex;
                         justify-content:space-between;
                         align-items:center;
                     "
-
                 >
 
                     ${buttons}
 
                 </div>
 
-
             </div>
-
 
         </div>
 
@@ -2580,10 +2380,9 @@ function renderScale(
 }
 
 
-
 // ======================================================
-// 三十五、Session结束
-// 不显示Session过渡页
+// 二十六、Session结束
+// 不显示Session页面
 // ======================================================
 
 function finishSession() {
@@ -2597,7 +2396,6 @@ function finishSession() {
 
         startSession();
 
-
         return;
     }
 
@@ -2606,9 +2404,8 @@ function finishSession() {
 }
 
 
-
 // ======================================================
-// 三十六、Block结束
+// 二十七、Block结束
 // ======================================================
 
 function finishBlock() {
@@ -2623,7 +2420,6 @@ function finishBlock() {
 
         showEndPage();
 
-
         return;
     }
 
@@ -2632,16 +2428,14 @@ function finishBlock() {
 }
 
 
-
 // ======================================================
-// 三十七、Block间休息
+// 二十八、Block之间休息
 // ======================================================
 
 function showBlockRest() {
 
     currentScreen =
         "rest";
-
 
     resetBodyWhite();
 
@@ -2656,13 +2450,9 @@ function showBlockRest() {
 
         <div class="experiment-container">
 
-
             <div class="title">
-
                 请稍作休息
-
             </div>
-
 
             <div class="instruction">
 
@@ -2678,21 +2468,12 @@ function showBlockRest() {
 
             </div>
 
-
             <button
-
                 class="control-button"
-
-                onclick="
-                    startBlock()
-                "
-
+                onclick="startBlock()"
             >
-
                 继续
-
             </button>
-
 
         </div>
 
@@ -2700,9 +2481,8 @@ function showBlockRest() {
 }
 
 
-
 // ======================================================
-// 三十八、键盘监听
+// 二十九、键盘监听
 // ======================================================
 
 document.addEventListener(
@@ -2710,36 +2490,14 @@ document.addEventListener(
     function(event) {
 
 
-        // ==================================================
-        // 被试编号页面
-        // ==================================================
-
-        if (
-            currentScreen ===
-            "participant" &&
-            event.key ===
-            "Enter"
-        ) {
-
-            event.preventDefault();
-
-
-            saveParticipantId();
-
-
-            return;
-        }
-
-
-        // ==================================================
+        // ------------------------------------------------
         // 练习SST
-        // ==================================================
+        // ------------------------------------------------
 
         if (
             currentScreen ===
             "practice_sst"
         ) {
-
 
             if (
                 /^[1-5]$/.test(
@@ -2748,7 +2506,6 @@ document.addEventListener(
             ) {
 
                 event.preventDefault();
-
 
                 selectPracticeWord(
                     parseInt(
@@ -2757,7 +2514,6 @@ document.addEventListener(
                     ) - 1
                 );
 
-
                 return;
             }
 
@@ -2769,9 +2525,7 @@ document.addEventListener(
 
                 event.preventDefault();
 
-
                 deletePracticeWord();
-
 
                 return;
             }
@@ -2784,25 +2538,21 @@ document.addEventListener(
 
                 event.preventDefault();
 
-
                 confirmPracticeSST();
-
 
                 return;
             }
-
         }
 
 
-        // ==================================================
+        // ------------------------------------------------
         // 正式SST
-        // ==================================================
+        // ------------------------------------------------
 
         if (
             currentScreen ===
             "sst"
         ) {
-
 
             if (
                 /^[1-5]$/.test(
@@ -2812,14 +2562,12 @@ document.addEventListener(
 
                 event.preventDefault();
 
-
                 selectWord(
                     parseInt(
                         event.key,
                         10
                     ) - 1
                 );
-
 
                 return;
             }
@@ -2832,9 +2580,7 @@ document.addEventListener(
 
                 event.preventDefault();
 
-
                 deleteLastWord();
-
 
                 return;
             }
@@ -2847,19 +2593,16 @@ document.addEventListener(
 
                 event.preventDefault();
 
-
                 confirmSST();
-
 
                 return;
             }
-
         }
 
 
-        // ==================================================
+        // ------------------------------------------------
         // 练习效价
-        // ==================================================
+        // ------------------------------------------------
 
         if (
             currentScreen ===
@@ -2871,7 +2614,6 @@ document.addEventListener(
 
             event.preventDefault();
 
-
             submitPracticeValence(
                 parseInt(
                     event.key,
@@ -2879,14 +2621,13 @@ document.addEventListener(
                 )
             );
 
-
             return;
         }
 
 
-        // ==================================================
+        // ------------------------------------------------
         // 练习唤醒度
-        // ==================================================
+        // ------------------------------------------------
 
         if (
             currentScreen ===
@@ -2898,7 +2639,6 @@ document.addEventListener(
 
             event.preventDefault();
 
-
             submitPracticeArousal(
                 parseInt(
                     event.key,
@@ -2906,14 +2646,13 @@ document.addEventListener(
                 )
             );
 
-
             return;
         }
 
 
-        // ==================================================
+        // ------------------------------------------------
         // 正式效价
-        // ==================================================
+        // ------------------------------------------------
 
         if (
             currentScreen ===
@@ -2925,7 +2664,6 @@ document.addEventListener(
 
             event.preventDefault();
 
-
             submitValence(
                 parseInt(
                     event.key,
@@ -2933,14 +2671,13 @@ document.addEventListener(
                 )
             );
 
-
             return;
         }
 
 
-        // ==================================================
+        // ------------------------------------------------
         // 正式唤醒度
-        // ==================================================
+        // ------------------------------------------------
 
         if (
             currentScreen ===
@@ -2952,14 +2689,12 @@ document.addEventListener(
 
             event.preventDefault();
 
-
             submitArousal(
                 parseInt(
                     event.key,
                     10
                 )
             );
-
 
             return;
         }
@@ -2968,9 +2703,8 @@ document.addEventListener(
 );
 
 
-
 // ======================================================
-// 三十九、CSV生成
+// 三十、CSV生成
 // ======================================================
 
 function convertToCSV(data) {
@@ -2983,10 +2717,6 @@ function convertToCSV(data) {
         return "";
     }
 
-
-    // --------------------------------------------------
-    // 收集所有字段名
-    // --------------------------------------------------
 
     var headers = [];
 
@@ -3017,10 +2747,6 @@ function convertToCSV(data) {
     );
 
 
-    // --------------------------------------------------
-    // CSV转义
-    // --------------------------------------------------
-
     function escapeCSV(value) {
 
         if (
@@ -3033,9 +2759,7 @@ function convertToCSV(data) {
 
 
         var text =
-            String(
-                value
-            );
+            String(value);
 
 
         text =
@@ -3056,19 +2780,15 @@ function convertToCSV(data) {
     var lines = [];
 
 
-    // 表头
     lines.push(
-
         headers
         .map(
             escapeCSV
         )
         .join(",")
-
     );
 
 
-    // 数据
     data.forEach(
         function(row) {
 
@@ -3094,7 +2814,6 @@ function convertToCSV(data) {
     );
 
 
-    // 加BOM，Excel打开中文不会乱码
     return (
         "\uFEFF" +
         lines.join(
@@ -3104,9 +2823,8 @@ function convertToCSV(data) {
 }
 
 
-
 // ======================================================
-// 四十、下载CSV
+// 三十一、下载CSV
 // ======================================================
 
 function downloadCSV() {
@@ -3118,7 +2836,6 @@ function downloadCSV() {
         alert(
             "当前没有可保存的数据"
         );
-
 
         return;
     }
@@ -3184,7 +2901,11 @@ function downloadCSV() {
 
         safeId
 
-        + "_SST_"
+        + "_"
+
+        + phase
+
+        + "_"
 
         + dateString
 
@@ -3200,7 +2921,6 @@ function downloadCSV() {
     link.href =
         url;
 
-
     link.download =
         filename;
 
@@ -3209,9 +2929,7 @@ function downloadCSV() {
         link
     );
 
-
     link.click();
-
 
     document.body.removeChild(
         link
@@ -3231,19 +2949,16 @@ function downloadCSV() {
 }
 
 
-
 // ======================================================
-// 四十一、实验结束
+// 三十二、实验结束
 // ======================================================
 
 function showEndPage() {
 
     clearPictureTimer();
 
-
     currentScreen =
         "end";
-
 
     resetBodyWhite();
 
@@ -3258,13 +2973,9 @@ function showEndPage() {
 
         <div class="experiment-container">
 
-
             <div class="title">
-
                 实验完成
-
             </div>
-
 
             <div class="instruction">
 
@@ -3281,21 +2992,12 @@ function showEndPage() {
 
             </div>
 
-
             <button
-
                 class="control-button"
-
-                onclick="
-                    downloadCSV()
-                "
-
+                onclick="downloadCSV()"
             >
-
                 保存数据
-
             </button>
-
 
         </div>
 
@@ -3306,22 +3008,31 @@ function showEndPage() {
         "实验完成"
     );
 
+    console.log(
+        "被试编号：",
+        participantId
+    );
+
+    console.log(
+        "阶段：",
+        phase
+    );
+
+    console.log(
+        "Block顺序：",
+        currentBlockOrder
+    );
 
     console.log(
         "最终数据条数：",
         experimentData.length
     );
 
-
     console.log(
         "最终数据：",
         experimentData
     );
 
-
-    // --------------------------------------------------
-    // 自动下载CSV
-    // --------------------------------------------------
 
     setTimeout(
         function() {
@@ -3334,50 +3045,42 @@ function showEndPage() {
 }
 
 
-
 // ======================================================
-// 四十二、Excel材料加载完成后启动
+// 三十三、Excel材料加载完成后启动
 // ======================================================
 
 materialsReady.then(
     function() {
-
 
         console.log(
             "重评材料：",
             materials.reappraisal.length
         );
 
-
         console.log(
             "分心材料：",
             materials.distract.length
         );
-
 
         console.log(
             "混合材料：",
             materials.mixed.length
         );
 
-
         console.log(
             "练习图片：",
             pictureSets.practice.length
         );
-
 
         console.log(
             "分心图片：",
             pictureSets.distract.length
         );
 
-
         console.log(
             "重评图片：",
             pictureSets.reappraisal.length
         );
-
 
         console.log(
             "混合图片：",
@@ -3385,7 +3088,23 @@ materialsReady.then(
         );
 
 
-        showParticipantPage();
+        // ------------------------------------------------
+        // 检查网址
+        // ------------------------------------------------
+
+        if (
+            !checkURL()
+        ) {
+
+            return;
+        }
+
+
+        // ------------------------------------------------
+        // 显示正式指导语
+        // ------------------------------------------------
+
+        showGuidance();
 
     }
 );
